@@ -1,0 +1,5 @@
+[target.'cfg(all(target_arch = "arm", target_os = "none"))']
+runner = "sudo probe-rs run --chip STM32F411CE"
+
+[build]
+target = "thumbv7em-none-eabihf"
