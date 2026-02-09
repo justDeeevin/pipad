@@ -3,3 +3,6 @@ runner = "sudo probe-rs run --chip STM32F411CE"
 
 [build]
 target = "thumbv7em-none-eabihf"
+
+[profile.release]
+debug = 2

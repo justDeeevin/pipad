@@ -1,5 +1,5 @@
 [package]
-name = "pipad-17"
+name = "pipad"
 version = "0.1.0"
 edition = "2024"
 
@@ -8,19 +8,15 @@ embassy-stm32 = { version = "0.5.0", features = [
 	"defmt",
 	"stm32f411ce",
 	"memory-x",
-	"time-driver-any",
 ] }
 embassy-executor = { version = "0.9.1", features = [
 	"defmt",
 	"arch-cortex-m",
 	"executor-thread",
 ] }
-embassy-time = { version = "0.5.0", features = [
-	"defmt",
-	"defmt-timestamp-uptime",
-] }
 defmt = "1.0.1"
 defmt-rtt = "1.1.0"
 cortex-m = { version = "0.7.7", features = ["critical-section-single-core"] }
 cortex-m-rt = "0.7.5"
 panic-probe = "1.0.0"
+keyberon = "0.1.1"
