@@ -8,10 +8,7 @@ use consts::*;
 use defmt::{Debug2Format, debug, info, trace};
 use embassy_executor::Spawner;
 use embassy_stm32::{
-    Config,
-    gpio::Speed,
-    rcc::{Hse, HseMode, Sysclk},
-    time::Hertz,
+    Config, adc::AdcChannel, gpio::Speed, peripherals::ADC1, rcc::{Hse, HseMode, Sysclk}, time::Hertz
 };
 use embassy_stm32::{
     Peri,
@@ -72,10 +69,10 @@ async fn main(_spawner: Spawner) {
 
         mux.select(i);
 
-        let read = adc.blocking_read(&mut am0, ADC_CYCLES) as Value;
-        debug!("am0:{} ({}) rests at {}", i, Debug2Format(&code), read);
+        let value = (0..8).map(|_| read(&mut adc, &mut am0)).sum::<Value>() / 8;
+        debug!("am0:{} ({}) rests at {}", i, Debug2Format(&code), value);
 
-        let out = Some(KeyState::new(code, read));
+        let out = Some(KeyState::new(code, value));
 
         i += 1;
 
@@ -90,10 +87,10 @@ async fn main(_spawner: Spawner) {
 
         mux.select(i);
 
-        let read = adc.blocking_read(&mut am1, ADC_CYCLES) as Value;
-        debug!("am1:{} ({}) rests at {}", i, Debug2Format(&code), read);
+        let value = (0..8).map(|_| read(&mut adc, &mut am1)).sum::<Value>() / 8;
+        debug!("am1:{} ({}) rests at {}", i, Debug2Format(&code), value);
 
-        let out = Some(KeyState::new(code, read));
+        let out = Some(KeyState::new(code, value));
         i += 1;
         out
     });
@@ -114,7 +111,7 @@ async fn main(_spawner: Spawner) {
                 mux.select(i as u8);
                 selected = true;
 
-                key_0.update(adc.blocking_read(&mut am0, ADC_CYCLES) as Value);
+                key_0.update(read(&mut adc, &mut am0));
 
                 if !any_pressed && key_0.pressed {
                     any_pressed = true;
@@ -126,7 +123,7 @@ async fn main(_spawner: Spawner) {
                     mux.select(i as u8);
                 }
 
-                key_1.update(adc.blocking_read(&mut am1, ADC_CYCLES) as Value);
+                key_1.update(read(&mut adc, &mut am1));
 
                 if !any_pressed && key_1.pressed {
                     any_pressed = true;
@@ -188,12 +185,19 @@ impl KeyState {
             Debug2Format(&self.code)
         );
 
-        if !self.pressed && self.filtered - self.resting < PRESS_DELTA_THRESHOLD {
+        let delta = self.filtered - self.resting;
+
+        if !self.pressed && delta < PRESS_DELTA_THRESHOLD {
             debug!("{} pressed", Debug2Format(&self.code));
             self.pressed = true;
-        } else if self.pressed && self.filtered - self.resting > RELEASE_DELTA_THRESHOLD {
+        } else if self.pressed && delta > RELEASE_DELTA_THRESHOLD {
             debug!("{} released", Debug2Format(&self.code));
             self.pressed = false;
         }
     }
+}
+
+fn read(adc: &mut Adc<ADC1>, pin: &mut impl AdcChannel<ADC1>) -> Value {
+    let _ = adc.blocking_read(pin, ADC_CYCLES);
+    adc.blocking_read(pin, ADC_CYCLES) as Value
 }
