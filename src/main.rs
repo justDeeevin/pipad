@@ -72,7 +72,7 @@ async fn main(_spawner: Spawner) {
 
         mux.select(i);
 
-        let read = adc.blocking_read(&mut am0, ADC_CYCLES) as i16;
+        let read = adc.blocking_read(&mut am0, ADC_CYCLES) as Value;
         debug!("am0:{} ({}) rests at {}", i, Debug2Format(&code), read);
 
         let out = Some(KeyState::new(code, read));
@@ -90,8 +90,8 @@ async fn main(_spawner: Spawner) {
 
         mux.select(i);
 
-        let read = adc.blocking_read(&mut am1, ADC_CYCLES) as i16;
-        debug!("am1:{} rests at {}", i, read);
+        let read = adc.blocking_read(&mut am1, ADC_CYCLES) as Value;
+        debug!("am1:{} ({}) rests at {}", i, Debug2Format(&code), read);
 
         let out = Some(KeyState::new(code, read));
         i += 1;
@@ -114,7 +114,7 @@ async fn main(_spawner: Spawner) {
                 mux.select(i as u8);
                 selected = true;
 
-                key_0.update(adc.blocking_read(&mut am0, ADC_CYCLES) as i16);
+                key_0.update(adc.blocking_read(&mut am0, ADC_CYCLES) as Value);
 
                 if !any_pressed && key_0.pressed {
                     any_pressed = true;
@@ -126,7 +126,7 @@ async fn main(_spawner: Spawner) {
                     mux.select(i as u8);
                 }
 
-                key_1.update(adc.blocking_read(&mut am1, ADC_CYCLES) as i16);
+                key_1.update(adc.blocking_read(&mut am1, ADC_CYCLES) as Value);
 
                 if !any_pressed && key_1.pressed {
                     any_pressed = true;
@@ -161,24 +161,25 @@ impl Mux {
 }
 
 struct KeyState {
-    resting: i16,
-    filtered: i16,
+    resting: Value,
+    filtered: Value,
     pressed: bool,
     code: KeyCode,
 }
 
 impl KeyState {
-    fn new(code: KeyCode, resting: i16) -> Self {
+    fn new(code: KeyCode, resting_raw: Value) -> Self {
+        let filtered = filtered_resting(resting_raw);
         Self {
-            resting: resting - 6,
-            filtered: resting - 6,
+            resting: filtered,
+            filtered,
             pressed: false,
             code,
         }
     }
 
     // TODO: send keycodes
-    fn update(&mut self, raw: i16) {
+    fn update(&mut self, raw: Value) {
         self.filtered += (raw - self.filtered) >> KEYPRESS_FILTER_SHIFT;
         trace!(
             "raw {}, filtered {} on {}",

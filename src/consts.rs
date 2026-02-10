@@ -1,6 +1,8 @@
 use embassy_stm32::{adc::SampleTime, gpio::Speed};
 use keyberon::key_code::KeyCode;
 
+pub type Value = i16;
+
 pub const PRESS_DELTA_THRESHOLD: i16 = -3;
 pub const RELEASE_DELTA_THRESHOLD: i16 = -1;
 
@@ -8,6 +10,11 @@ pub const SELECT_SPEED: Speed = Speed::Medium;
 pub const ADC_CYCLES: SampleTime = SampleTime::CYCLES15;
 
 pub const KEYPRESS_FILTER_SHIFT: i16 = 2;
+
+// For whatever reason I need to shift the resting value a bit to make it work with the filtering
+pub const fn filtered_resting(raw: Value) -> Value {
+    raw - 6
+}
 
 pub const AM0_KEYCODES: [Option<KeyCode>; 16] = {
     use KeyCode::*;
